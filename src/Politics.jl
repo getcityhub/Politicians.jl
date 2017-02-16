@@ -6,7 +6,7 @@ using MySQL
 using Requests
 
 url = "https://www.googleapis.com/civicinfo/v2/representatives"
-query = Dict("address" => "10028", "key" => "AIzaSyBKZFDfEfsZp6ZX-7N1cBWxza-DL7MnOgc")
+query = Dict("address" => ARGS[1], "key" => ARGS[2])
 res = get(url; query = query)
 data = Requests.json(res)
 
