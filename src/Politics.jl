@@ -62,10 +62,33 @@ function get_politicians(zipcode)
             push!(types, MYSQL_TYPE_STRING)
         end
 
-        command = string("INSERT INTO politicians (", join(keys, ", "), ") VALUES (", values_str, ")")
+        mysql_stmt_prepare(conn, "SELECT * FROM politicians WHERE name=?")
+        results = mysql_execute(conn, [MYSQL_TYPE_STRING], [politician["name"]]; opformat=MYSQL_TUPLES)
 
-        mysql_stmt_prepare(conn, command)
-        mysql_execute(conn, types, values)
+        if length(results) == 0
+            command = string("INSERT INTO politicians (", join(keys, ", "), ") VALUES (", values_str, ")")
+
+            mysql_stmt_prepare(conn, command)
+            mysql_execute(conn, types, values)
+        else
+            new_types = []
+            new_values = []
+
+            keys_with_values = ""
+
+            for l = 1:length(values)
+                keys_with_values = string(keys_with_values, keys[l], "=?", l == length(values) ? "" : ",")
+                push!(new_types, MYSQL_TYPE_STRING)
+                push!(new_values, values[l])
+            end
+
+            command = string("UPDATE politicians SET ", keys_with_values, " WHERE name=?")
+            push!(new_types, MYSQL_TYPE_STRING)
+            push!(new_values, politician["name"])
+
+            mysql_stmt_prepare(conn, command)
+            mysql_execute(conn, new_types, new_values)
+        end
 
         j += 1
     end
