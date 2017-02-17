@@ -1,3 +1,5 @@
+# List of all valid NYC zipcodes
+
 const NYC_ZIPCODES = [
     10453, 10457, 10460, # Central Bronx
     10458, 10467, 10468, # Bronx Park and Fordham
