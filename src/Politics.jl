@@ -10,12 +10,12 @@ include("consts.jl")
 function get_politicians(zipcode)
     url = "https://www.googleapis.com/civicinfo/v2/representatives"
     query = Dict("address" => zipcode, "key" => ARGS[1])
-    res = get(url; query = query)
-    data = Requests.json(res)
+    response = get(url; query = query)
+    response_data = Requests.json(response)
 
     positions = Dict()
 
-    for office in data["offices"]
+    for office in response_data["offices"]
         for index in office["officialIndices"]
             positions[index + 1] = office["name"]
         end
@@ -23,71 +23,103 @@ function get_politicians(zipcode)
 
     j = 1
 
-    for politician in data["officials"]
-        keys = ["name", "party", "zipcodes"]
-        values = [politician["name"], politician["party"], string(zipcode)]
+    for politician in response_data["officials"]
+        data = Dict("name" => politician["name"], "party" => politician["party"], "zipcodes" => string(zipcode))
 
         if haskey(positions, j)
-            push!(keys, "position")
-            push!(values, positions[j])
+            data["position"] = positions[j]
         end
 
         if haskey(politician, "emails")
-            push!(keys, "email")
-            push!(values, politician["emails"][1])
+            data["email"] = politician["emails"][1]
         end
 
         if haskey(politician, "phones")
-            push!(keys, "phone")
-            push!(values, politician["phones"][1])
+            data["phone"] = politician["phones"][1]
         end
 
         if haskey(politician, "urls")
-            push!(keys, "website")
-            push!(values, politician["urls"][1])
+            data["website"] = politician["urls"][1]
         end
 
         if haskey(politician, "channels")
             for channel in politician["channels"]
-                push!(keys, lowercase(channel["type"]))
-                push!(values, channel["id"])
+                data[lowercase(channel["type"])] = channel["id"]
             end
         end
 
-        values_str = ""
-        types = []
+        mysql_stmt_prepare(conn, "SELECT * FROM politicians WHERE name=?")
+        mysql_execute(conn, [MYSQL_TYPE_STRING], [politician["name"]])
 
-        for i = 1:length(values)
-            values_str = string(values_str, i == length(values) ? "?" : "?, ")
-            push!(types, MYSQL_TYPE_STRING)
+        existing_data = 0
+
+        for row in MySQLRowIterator(conn, [MYSQL_TYPE_STRING], [politician["name"]])
+            existing_data = row # there should only ever be one
         end
 
-        mysql_stmt_prepare(conn, "SELECT * FROM politicians WHERE name=?")
-        results = mysql_execute(conn, [MYSQL_TYPE_STRING], [politician["name"]]; opformat=MYSQL_TUPLES)
+        if existing_data == 0
+            values_str = ""
+            keys = []
+            types = []
+            values = []
 
-        if length(results) == 0
+            for (i, (key, val)) in enumerate(data)
+                values_str = string(values_str, i == length(data) ? "?" : "?, ")
+                push!(keys, key)
+                push!(types, MYSQL_TYPE_STRING)
+                push!(values, val)
+            end
+
             command = string("INSERT INTO politicians (", join(keys, ", "), ") VALUES (", values_str, ")")
 
             mysql_stmt_prepare(conn, command)
             mysql_execute(conn, types, values)
         else
-            new_types = []
-            new_values = []
+            new_data = Dict()
 
-            keys_with_values = ""
+            zipcodes = map(y -> parse(Int64, y), split(existing_data[3], ","))
 
-            for l = 1:length(values)
-                keys_with_values = string(keys_with_values, keys[l], "=?", l == length(values) ? "" : ",")
-                push!(new_types, MYSQL_TYPE_STRING)
-                push!(new_values, values[l])
+            if !in(zipcode, zipcodes)
+                push!(zipcodes, zipcode)
+                new_data["zipcodes"] = join(zipcodes, ",")
             end
 
-            command = string("UPDATE politicians SET ", keys_with_values, " WHERE name=?")
-            push!(new_types, MYSQL_TYPE_STRING)
-            push!(new_values, politician["name"])
+            check(pos, key) = begin
+                if haskey(data, key)
+                    if isnull(existing_data[pos])
+                        new_data[key] = data[key]
+                    elseif data[key] != get(existing_data[pos])
+                        new_data[key] = data[key]
+                    end
+                end
+            end
 
-            mysql_stmt_prepare(conn, command)
-            mysql_execute(conn, new_types, new_values)
+            check(4, "position")
+            check(5, "party")
+            check(6, "email")
+            check(7, "phone")
+            check(8, "website")
+            check(9, "facebook")
+            check(10, "googleplus")
+            check(11, "twitter")
+            check(12, "youtube")
+
+            if length(new_data) > 0
+                keys_values_str = ""
+                types = []
+                values = []
+
+                for (l, (key, val)) in enumerate(new_data)
+                    keys_values_str = string(keys_values_str, key, "=?", l == length(new_data) ? "" : ",")
+                    push!(types, MYSQL_TYPE_STRING)
+                    push!(values, val)
+                end
+
+                command = string("UPDATE politicians SET ", keys_values_str, " WHERE id=", existing_data[1])
+
+                mysql_stmt_prepare(conn, command)
+                mysql_execute(conn, types, values)
+            end
         end
 
         j += 1
