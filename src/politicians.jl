@@ -15,10 +15,28 @@ function get_politicians(api_key, conn, zipcode)
     end
 
     for (i, politician) in enumerate(response_data["officials"])
-        data = Dict("name" => politician["name"], "party" => politician["party"], "zipcodes" => string(zipcode))
+        data = Dict("name" => politician["name"], "zipcodes" => string(zipcode))
 
         if haskey(positions, i)
-            data["position"] = positions[i]
+            if haskey(POSITIONS, positions[i])
+                data["position"] = POSITIONS[positions[i]]
+            else
+                data["position"] = positions[i]
+            end
+        end
+
+        if haskey(politician, "party")
+            party = politician["party"]
+
+            if party == "Democratic"
+                party = "Democrat"
+            end
+
+            if party == "unknown"
+                party = "Unknown"
+            end
+
+            data["party"] = party
         end
 
         if haskey(politician, "photoUrl")

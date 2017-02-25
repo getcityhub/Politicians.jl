@@ -48,3 +48,26 @@ const NYC_ZIPCODES = [
     10301, 10304, 10305, # Stapleton and St. George
     10314 # Mid-Island
 ]
+
+const POSITIONS = Dict{String, String}(
+    "President of the United States" => "President",
+    "Vice-President of the United States" => "Vice President",
+    "United States Senate" => "Senator",
+    "United States House of Representatives NY-03" => "NY-03 Representative",
+    "United States House of Representatives NY-05" => "NY-05 Representative",
+    "United States House of Representatives NY-06" => "NY-06 Representative",
+    "United States House of Representatives NY-07" => "NY-07 Representative",
+    "United States House of Representatives NY-08" => "NY-08 Representative",
+    "United States House of Representatives NY-09" => "NY-09 Representative",
+    "United States House of Representatives NY-10" => "NY-10 Representative",
+    "United States House of Representatives NY-11" => "NY-11 Representative",
+    "United States House of Representatives NY-12" => "NY-12 Representative",
+    "United States House of Representatives NY-13" => "NY-13 Representative",
+    "United States House of Representatives NY-14" => "NY-14 Representative",
+    "United States House of Representatives NY-15" => "NY-15 Representative",
+    "United States House of Representatives NY-16" => "NY-16 Representative",
+    "District Attorney - Bronx" => "Bronx District Attorney",
+    "District Attorney - Manhattan" => "Manhattan District Attorney",
+    "District Attorney - Queens" => "Queens District Attorney",
+    "District Attorney - Richmond" => "Richmond District Attorney"
+)
