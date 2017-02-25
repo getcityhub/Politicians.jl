@@ -21,6 +21,10 @@ function get_politicians(api_key, conn, zipcode)
             data["position"] = positions[i]
         end
 
+        if haskey(politician, "photoUrl")
+            data["photo_url"] = politician["photoUrl"]
+        end
+
         if haskey(politician, "emails")
             data["email"] = politician["emails"][1]
         end
@@ -87,13 +91,14 @@ function get_politicians(api_key, conn, zipcode)
 
             check(4, "position")
             check(5, "party")
-            check(6, "email")
-            check(7, "phone")
-            check(8, "website")
-            check(9, "facebook")
-            check(10, "googleplus")
-            check(11, "twitter")
-            check(12, "youtube")
+            check(6, "photo_url")
+            check(7, "email")
+            check(8, "phone")
+            check(9, "website")
+            check(10, "facebook")
+            check(11, "googleplus")
+            check(12, "twitter")
+            check(13, "youtube")
 
             if length(new_data) > 0
                 keys_values_str = ""
