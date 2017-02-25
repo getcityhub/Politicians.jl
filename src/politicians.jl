@@ -32,11 +32,9 @@ function get_politicians(api_key, conn, zipcode)
                 party = "Democrat"
             end
 
-            if party == "unknown"
-                party = "Unknown"
+            if lowercase(party) != "unknown"
+                data["party"] = party
             end
-
-            data["party"] = party
         end
 
         if haskey(politician, "photoUrl")
